@@ -1,5 +1,6 @@
 package com.ecommerce.project.exception;
 
+import com.ecommerce.project.payload.ApiResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -29,14 +30,14 @@ public class MyGlobalExceptionHandler {
     }
 
     @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<String> myResourceNotFoundException(ResourceNotFoundException e) {
+    public ResponseEntity<ApiResponse> myResourceNotFoundException(ResourceNotFoundException e) {
         String message = e.getMessage();
-        return new ResponseEntity<>(message, NOT_FOUND);
+        return new ResponseEntity<>(new ApiResponse(message, false), NOT_FOUND);
     }
 
     @ExceptionHandler(ApiException.class)
-    public ResponseEntity<String> myApiException(ApiException e) {
+    public ResponseEntity<ApiResponse> myApiException(ApiException e) {
         String message = e.getMessage();
-        return new ResponseEntity<>(message, BAD_REQUEST);
+        return new ResponseEntity<>(new ApiResponse(message, false), BAD_REQUEST);
     }
 }
