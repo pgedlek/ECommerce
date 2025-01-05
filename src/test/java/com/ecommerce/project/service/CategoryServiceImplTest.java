@@ -35,8 +35,8 @@ class CategoryServiceImplTest {
     private static final String TEST_SORT_ORDER = SORT_DIR;
     private static final Long TEST_CATEGORY_ID = 1L;
     private static final String TEST_CATEGORY_NAME = "Category name";
-    private static final Category TEST_CATEGORY_WITHOUT_ID = new Category(null, TEST_CATEGORY_NAME);
-    private static final Category TEST_CATEGORY = new Category(TEST_CATEGORY_ID, TEST_CATEGORY_NAME);
+    private static final Category TEST_CATEGORY_WITHOUT_ID = new Category(null, TEST_CATEGORY_NAME, List.of());
+    private static final Category TEST_CATEGORY = new Category(TEST_CATEGORY_ID, TEST_CATEGORY_NAME, List.of());
     private static final CategoryDTO TEST_CATEGORY_DTO_WITHOUT_ID = new CategoryDTO(null, TEST_CATEGORY_NAME);
     private static final CategoryDTO TEST_CATEGORY_DTO = new CategoryDTO(TEST_CATEGORY_ID, TEST_CATEGORY_NAME);
 
@@ -160,7 +160,7 @@ class CategoryServiceImplTest {
         // given
         when(categoryRepositoryMock.findById(TEST_CATEGORY_ID)).thenReturn(Optional.of(TEST_CATEGORY));
         String categoryNameAfterUpdate = "New category name";
-        Category categoryToUpdate = new Category(TEST_CATEGORY_ID, categoryNameAfterUpdate);
+        Category categoryToUpdate = new Category(TEST_CATEGORY_ID, categoryNameAfterUpdate, List.of());
         CategoryDTO categoryDtoToUpdate = new CategoryDTO(TEST_CATEGORY_ID, categoryNameAfterUpdate);
         when(modelMapperMock.map(categoryDtoToUpdate, Category.class)).thenReturn(categoryToUpdate);
         when(categoryRepositoryMock.save(categoryToUpdate)).thenReturn(categoryToUpdate);
