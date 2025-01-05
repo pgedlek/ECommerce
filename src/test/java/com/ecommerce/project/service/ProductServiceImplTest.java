@@ -27,7 +27,7 @@ class ProductServiceImplTest {
     @Test
     public void todo() {
         // given
-        
+
 
         // when
         ProductResponse allProducts = productService.getAllProducts();
