@@ -1,5 +1,6 @@
 package com.ecommerce.project.service;
 
+import com.ecommerce.project.exception.ApiException;
 import com.ecommerce.project.exception.ResourceNotFoundException;
 import com.ecommerce.project.model.Category;
 import com.ecommerce.project.model.Product;
@@ -32,6 +33,13 @@ public class ProductServiceImpl implements ProductService {
         Category productCategory = categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new ResourceNotFoundException(categoryId, "categoryId", "Category"));
 
+        boolean isProductPresent = productCategory.getProducts().stream()
+                .anyMatch(p -> p.getProductName().equals(productDTO.getProductName()));
+
+        if (isProductPresent) {
+            throw new ApiException("Product with name " + productDTO.getProductName() + " already exists!");
+        }
+
         Product product = modelMapper.map(productDTO, Product.class);
         product.setImage("default.png");
         product.setCategory(productCategory);
@@ -47,6 +55,10 @@ public class ProductServiceImpl implements ProductService {
                 .map(product -> modelMapper.map(product, ProductDTO.class))
                 .toList();
 
+        if (productDTOS.isEmpty()) {
+            throw new ApiException("No products created till now.");
+        }
+
         return new ProductResponse(productDTOS);
     }
 
@@ -56,6 +68,10 @@ public class ProductServiceImpl implements ProductService {
                 .orElseThrow(() -> new ResourceNotFoundException(categoryId, "categoryId", "Category"));
 
         List<Product> products = productRepository.findByCategoryOrderByPriceAsc(productCategory);
+
+        if (products.isEmpty()) {
+            throw new ApiException("No products found with categoryId " + categoryId);
+        }
 
         List<ProductDTO> productDTOS = products.stream()
                 .map(product -> modelMapper.map(product, ProductDTO.class))
@@ -67,6 +83,10 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public ProductResponse searchProductByKeyword(String keyword) {
         List<Product> products = productRepository.findByProductNameLikeIgnoreCase("%" + keyword + "%");
+
+        if (products.isEmpty()) {
+            throw new ApiException("No products found matching keyword " + keyword);
+        }
 
         List<ProductDTO> productDTOS = products.stream()
                 .map(product -> modelMapper.map(product, ProductDTO.class))
@@ -107,7 +127,6 @@ public class ProductServiceImpl implements ProductService {
         Product productFromDb = productRepository.findById(productId)
                 .orElseThrow(() -> new ResourceNotFoundException(productId, "productId", "Product"));
 
-        String path = "images/";
         String filename = fileService.uploadImage(path, image);
         productFromDb.setImage(filename);
 
