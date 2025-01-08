@@ -30,7 +30,7 @@ class ProductServiceImplTest {
     private static final Integer TEST_PAGE_SIZE = Integer.valueOf(PAGE_SIZE);
     private static final String TEST_SORT_BY = SORT_PRODUCTS_BY;
     private static final String TEST_SORT_ORDER = SORT_DIR;
-    private static final Product TEST_PRODUCT = new Product(1L, "Name", "default.png", "Description", 1, 1.0, 0.0, 1.0, null);
+    private static final Product TEST_PRODUCT = new Product(1L, "Name", "default.png", "Description", 1, 1.0, 0.0, 1.0);
     private static final ProductDTO TEST_PRODUCT_DTO = new ProductDTO(1L, "Name", "default.png", "Description", 1, 1.0, 0.0, 1.0);
 
     @Mock

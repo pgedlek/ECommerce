@@ -29,6 +29,17 @@ public class Product {
     private double discount;
     private double specialPrice;
 
+    public Product(Long productId, String productName, String image, String description, Integer quantity, double price, double discount, double specialPrice) {
+        this.productId = productId;
+        this.specialPrice = specialPrice;
+        this.discount = discount;
+        this.price = price;
+        this.quantity = quantity;
+        this.description = description;
+        this.image = image;
+        this.productName = productName;
+    }
+
     @ManyToOne
     @JoinColumn(name = "category_id")
     private Category category;

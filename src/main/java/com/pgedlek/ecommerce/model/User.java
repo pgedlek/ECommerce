@@ -21,7 +21,7 @@ public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "user_id")
-    private Long usedId;
+    private Long userId;
 
     @NotBlank
     @Size(max = 20)
@@ -36,7 +36,7 @@ public class User {
     @Size(max = 120)
     private String password;
 
-    public User(String password, String email, String username) {
+    public User(String username, String email, String password) {
         this.password = password;
         this.email = email;
         this.username = username;
