@@ -132,4 +132,57 @@ class ProductServiceImplTest {
                 .hasMessage("No products found with categoryId " + CATEGORY_ID);
         verifyNoMoreInteractions(categoryRepositoryMock, productRepositoryMock, modelMapperMock);
     }
+
+    @Test
+    public void testAddProduct_Success() {
+        // given
+        Product product = new Product();
+        ProductDTO productDTO = new ProductDTO();
+        Category category = new Category(111L, "Other category name", List.of());
+        when(categoryRepositoryMock.findById(CATEGORY_ID)).thenReturn(Optional.of(category));
+        when(modelMapperMock.map(productDTO, Product.class)).thenReturn(product);
+        when(productRepositoryMock.save(product)).thenReturn(TEST_PRODUCT);
+        when(modelMapperMock.map(TEST_PRODUCT, ProductDTO.class)).thenReturn(TEST_PRODUCT_DTO);
+
+        // when
+        ProductDTO result = productService.addProduct(CATEGORY_ID, productDTO);
+
+        // then
+        assertThat(result).isSameAs(TEST_PRODUCT_DTO);
+        verify(categoryRepositoryMock).findById(CATEGORY_ID);
+        verify(modelMapperMock).map(productDTO, Product.class);
+        verify(productRepositoryMock).save(product);
+        verify(modelMapperMock).map(TEST_PRODUCT, ProductDTO.class);
+        verifyNoMoreInteractions(categoryRepositoryMock, productRepositoryMock, modelMapperMock);
+    }
+
+    @Test
+    public void testAddProduct_ResourceNotFound() {
+        // given
+        when(categoryRepositoryMock.findById(CATEGORY_ID)).thenReturn(Optional.empty());
+
+        // when
+        Throwable caughtException = catchThrowable(() -> productService.addProduct(CATEGORY_ID, TEST_PRODUCT_DTO));
+
+        // then
+        assertThat(caughtException).isExactlyInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("Category not found with categoryId " + CATEGORY_ID);
+        verify(categoryRepositoryMock).findById(CATEGORY_ID);
+        verifyNoMoreInteractions(categoryRepositoryMock, productRepositoryMock, modelMapperMock);
+    }
+
+    @Test
+    public void testAddProduct_ProductAlreadyExists() {
+        // given
+        when(categoryRepositoryMock.findById(CATEGORY_ID)).thenReturn(Optional.of(TEST_CATEGORY));
+
+        // when
+        Throwable caughtException = catchThrowable(() -> productService.addProduct(CATEGORY_ID, TEST_PRODUCT_DTO));
+
+        // then
+        assertThat(caughtException).isExactlyInstanceOf(ApiException.class)
+                .hasMessage("Product with name " +  TEST_PRODUCT_DTO.getProductName() + " already exists!");
+        verify(categoryRepositoryMock).findById(CATEGORY_ID);
+        verifyNoMoreInteractions(categoryRepositoryMock, productRepositoryMock, modelMapperMock);
+    }
 }
