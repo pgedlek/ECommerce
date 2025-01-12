@@ -70,19 +70,19 @@ public class AuthenticationController {
 
 
     @PostMapping("/signup")
-    public ResponseEntity<?> registerUser(@Valid @RequestBody SignupRequest signUpRequest) {
-        if (userRepository.existsByUsername(signUpRequest.getUsername())) {
+    public ResponseEntity<?> registerUser(@Valid @RequestBody SignupRequest signupRequest) {
+        if (userRepository.existsByUsername(signupRequest.getUsername())) {
             return new ResponseEntity<>(new MessageResponse("Error: username is already taken!"), HttpStatus.BAD_REQUEST);
         }
 
-        if (userRepository.existsByEmail(signUpRequest.getEmail())) {
+        if (userRepository.existsByEmail(signupRequest.getEmail())) {
             return new ResponseEntity<>(new MessageResponse("Error: email is already taken!"), HttpStatus.BAD_REQUEST);
         }
 
-        User user = new User(signUpRequest.getUsername(), signUpRequest.getEmail(),
-                passwordEncoder.encode(signUpRequest.getPassword()));
+        User user = new User(signupRequest.getUsername(), signupRequest.getEmail(),
+                passwordEncoder.encode(signupRequest.getPassword()));
 
-        Set<String> requestRoles = signUpRequest.getRole();
+        Set<String> requestRoles = signupRequest.getRole();
         Set<Role> roles = new HashSet<>();
 
         if (requestRoles == null || requestRoles.isEmpty()) {
