@@ -2,10 +2,12 @@ package com.pgedlek.ecommerce.service;
 
 import com.pgedlek.ecommerce.exception.ApiException;
 import com.pgedlek.ecommerce.exception.ResourceNotFoundException;
+import com.pgedlek.ecommerce.model.Cart;
 import com.pgedlek.ecommerce.model.Category;
 import com.pgedlek.ecommerce.model.Product;
 import com.pgedlek.ecommerce.payload.ProductDTO;
 import com.pgedlek.ecommerce.payload.ProductResponse;
+import com.pgedlek.ecommerce.repository.CartRepository;
 import com.pgedlek.ecommerce.repository.CategoryRepository;
 import com.pgedlek.ecommerce.repository.ProductRepository;
 import org.junit.jupiter.api.Test;
@@ -18,7 +20,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
@@ -45,6 +49,12 @@ class ProductServiceImplTest {
     private CategoryRepository categoryRepositoryMock;
     @Mock
     private ModelMapper modelMapperMock;
+    @Mock
+    private FileService fileServiceMock;
+    @Mock
+    private CartRepository cartRepositoryMock;
+    @Mock
+    private CartService cartServiceMock;
 
     @InjectMocks
     private ProductServiceImpl productService;
@@ -172,17 +182,191 @@ class ProductServiceImplTest {
     }
 
     @Test
-    public void testAddProduct_ProductAlreadyExists() {
+    void testSearchProductByKeyword_Success() {
         // given
-        when(categoryRepositoryMock.findById(CATEGORY_ID)).thenReturn(Optional.of(TEST_CATEGORY));
+        List<Product> products = List.of(TEST_PRODUCT);
+        when(productRepositoryMock.findByProductNameLikeIgnoreCase("%Laptop%", PageRequest.of(TEST_PAGE_NUMBER, TEST_PAGE_SIZE, Sort.by(TEST_SORT_BY).ascending())))
+                .thenReturn(new PageImpl<>(products));
+        when(modelMapperMock.map(TEST_PRODUCT, ProductDTO.class)).thenReturn(TEST_PRODUCT_DTO);
 
         // when
-        Throwable caughtException = catchThrowable(() -> productService.addProduct(CATEGORY_ID, TEST_PRODUCT_DTO));
+        ProductResponse response = productService.searchProductByKeyword("Laptop", TEST_PAGE_NUMBER, TEST_PAGE_SIZE, TEST_SORT_BY, TEST_SORT_ORDER);
+
+        // then
+        assertThat(response.getContent()).hasSameElementsAs(List.of(TEST_PRODUCT_DTO));
+        verify(productRepositoryMock).findByProductNameLikeIgnoreCase("%Laptop%", PageRequest.of(TEST_PAGE_NUMBER, TEST_PAGE_SIZE, Sort.by(TEST_SORT_BY).ascending()));
+        verify(modelMapperMock).map(TEST_PRODUCT, ProductDTO.class);
+        verifyNoMoreInteractions(productRepositoryMock, modelMapperMock);
+    }
+
+    @Test
+    void testSearchProductByKeyword_NoProductsFound() {
+        // given
+        when(productRepositoryMock.findByProductNameLikeIgnoreCase("%Laptop%", PageRequest.of(TEST_PAGE_NUMBER, TEST_PAGE_SIZE, Sort.by(TEST_SORT_BY).ascending())))
+                .thenReturn(new PageImpl<>(List.of()));
+
+        // when
+        Throwable caughtException = catchThrowable(() -> productService.searchProductByKeyword("Laptop", TEST_PAGE_NUMBER, TEST_PAGE_SIZE, TEST_SORT_BY, TEST_SORT_ORDER));
 
         // then
         assertThat(caughtException).isExactlyInstanceOf(ApiException.class)
-                .hasMessage("Product with name " +  TEST_PRODUCT_DTO.getProductName() + " already exists!");
-        verify(categoryRepositoryMock).findById(CATEGORY_ID);
-        verifyNoMoreInteractions(categoryRepositoryMock, productRepositoryMock, modelMapperMock);
+                .hasMessage("No products found matching keyword Laptop");
+        verifyNoMoreInteractions(productRepositoryMock, modelMapperMock);
+    }
+
+    @Test
+    void testUpdateProduct_Success() {
+        // given
+        when(productRepositoryMock.findById(PRODUCT_ID)).thenReturn(Optional.of(TEST_PRODUCT));
+        Product updatedProduct = new Product(PRODUCT_ID, "Updated Name", "updated.png", "Updated Description", 5, 50.0, 5.0, 45.0);
+        ProductDTO updatedProductDTO = new ProductDTO(PRODUCT_ID, "Updated Name", "updated.png", "Updated Description", 5, 50.0, 5.0, 45.0);
+        when(modelMapperMock.map(updatedProductDTO, Product.class)).thenReturn(updatedProduct);
+        when(productRepositoryMock.save(TEST_PRODUCT)).thenReturn(updatedProduct);
+        when(modelMapperMock.map(updatedProduct, ProductDTO.class)).thenReturn(updatedProductDTO);
+
+        // when
+        ProductDTO result = productService.updateProduct(PRODUCT_ID, updatedProductDTO);
+
+        // then
+        assertThat(result).isSameAs(updatedProductDTO);
+        verify(productRepositoryMock).findById(PRODUCT_ID);
+        verify(modelMapperMock).map(updatedProductDTO, Product.class);
+        verify(productRepositoryMock).save(TEST_PRODUCT);
+        verify(modelMapperMock).map(updatedProduct, ProductDTO.class);
+        verifyNoMoreInteractions(productRepositoryMock, modelMapperMock);
+    }
+
+    @Test
+    void testUpdateProduct_ResourceNotFound() {
+        // given
+        when(productRepositoryMock.findById(PRODUCT_ID)).thenReturn(Optional.empty());
+        ProductDTO productDTO = new ProductDTO(PRODUCT_ID, "Updated Product", "updated.png", "Updated Description", 5, 50.0, 5.0, 45.0);
+
+        // when
+        Throwable caughtException = catchThrowable(() -> productService.updateProduct(PRODUCT_ID, productDTO));
+
+        // then
+        assertThat(caughtException)
+                .isExactlyInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("Product not found with productId " + PRODUCT_ID);
+        verify(productRepositoryMock).findById(PRODUCT_ID);
+        verifyNoMoreInteractions(productRepositoryMock, modelMapperMock);
+    }
+
+    @Test
+    void testUpdateProductImage_Success() throws Exception {
+        // given
+        MultipartFile image = mock(MultipartFile.class);
+        when(productRepositoryMock.findById(PRODUCT_ID)).thenReturn(Optional.of(TEST_PRODUCT));
+
+        String uploadedImageName = "updated_image.png";
+        when(fileServiceMock.uploadImage(null, image)).thenReturn(uploadedImageName);
+        Product updatedProduct = new Product(PRODUCT_ID, "Name", uploadedImageName, "Description", 1, 1.0, 0.0, 1.0);
+        when(productRepositoryMock.save(TEST_PRODUCT)).thenReturn(updatedProduct);
+        when(modelMapperMock.map(updatedProduct, ProductDTO.class)).thenReturn(TEST_PRODUCT_DTO);
+
+        // when
+        ProductDTO result = productService.updateProductImage(PRODUCT_ID, image);
+
+        // then
+        assertThat(result).isSameAs(TEST_PRODUCT_DTO);
+        verify(productRepositoryMock).findById(PRODUCT_ID);
+        verify(fileServiceMock).uploadImage(null, image);
+        verify(productRepositoryMock).save(TEST_PRODUCT);
+        verify(modelMapperMock).map(updatedProduct, ProductDTO.class);
+        verifyNoMoreInteractions(productRepositoryMock, fileServiceMock, modelMapperMock);
+    }
+
+    @Test
+    void testUpdateProductImage_ProductNotFound() {
+        // given
+        MultipartFile image = mock(MultipartFile.class);
+        when(productRepositoryMock.findById(PRODUCT_ID)).thenReturn(Optional.empty());
+
+        // when
+        Throwable caughtException = catchThrowable(() -> productService.updateProductImage(PRODUCT_ID, image));
+
+        // then
+        assertThat(caughtException)
+                .isExactlyInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("Product not found with productId " + PRODUCT_ID);
+        verify(productRepositoryMock).findById(PRODUCT_ID);
+        verifyNoMoreInteractions(productRepositoryMock, fileServiceMock, modelMapperMock);
+    }
+
+    @Test
+    void testUpdateProductImage_FileUploadError() throws Exception {
+        // given
+        MultipartFile image = mock(MultipartFile.class);
+        when(productRepositoryMock.findById(PRODUCT_ID)).thenReturn(Optional.of(TEST_PRODUCT));
+        when(fileServiceMock.uploadImage(null, image)).thenThrow(new IOException("File upload failed"));
+
+        // when
+        Throwable caughtException = catchThrowable(() -> productService.updateProductImage(PRODUCT_ID, image));
+
+        // then
+        assertThat(caughtException)
+                .isExactlyInstanceOf(IOException.class)
+                .hasMessage("File upload failed");
+        verify(productRepositoryMock).findById(PRODUCT_ID);
+        verify(fileServiceMock).uploadImage(null, image);
+        verifyNoMoreInteractions(productRepositoryMock, fileServiceMock, modelMapperMock);
+    }
+
+    @Test
+    void testDeleteProduct_Success() {
+        // given
+        when(productRepositoryMock.findById(PRODUCT_ID)).thenReturn(Optional.of(TEST_PRODUCT));
+        when(cartRepositoryMock.findCartsByProductId(PRODUCT_ID)).thenReturn(List.of());
+        when(modelMapperMock.map(TEST_PRODUCT, ProductDTO.class)).thenReturn(TEST_PRODUCT_DTO);
+
+        // when
+        ProductDTO result = productService.deleteProduct(PRODUCT_ID);
+
+        // then
+        assertThat(result).isSameAs(TEST_PRODUCT_DTO);
+        verify(productRepositoryMock).findById(PRODUCT_ID);
+        verify(cartRepositoryMock).findCartsByProductId(PRODUCT_ID);
+        verify(productRepositoryMock).delete(TEST_PRODUCT);
+        verify(modelMapperMock).map(TEST_PRODUCT, ProductDTO.class);
+        verifyNoMoreInteractions(productRepositoryMock, cartRepositoryMock, modelMapperMock);
+    }
+
+    @Test
+    void testDeleteProduct_ProductNotFound() {
+        // given
+        when(productRepositoryMock.findById(PRODUCT_ID)).thenReturn(Optional.empty());
+
+        // when
+        Throwable caughtException = catchThrowable(() -> productService.deleteProduct(PRODUCT_ID));
+
+        // then
+        assertThat(caughtException)
+                .isExactlyInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("Product not found with productId " + PRODUCT_ID);
+        verify(productRepositoryMock).findById(PRODUCT_ID);
+        verifyNoMoreInteractions(productRepositoryMock, cartRepositoryMock, modelMapperMock);
+    }
+
+    @Test
+    void testDeleteProduct_ProductInCart() {
+        // given
+        Cart cart = new Cart();
+        cart.setCartId(1L);
+        List<Cart> carts = List.of(cart);
+
+        when(productRepositoryMock.findById(PRODUCT_ID)).thenReturn(Optional.of(TEST_PRODUCT));
+        when(cartRepositoryMock.findCartsByProductId(PRODUCT_ID)).thenReturn(carts);
+
+        // when
+        productService.deleteProduct(PRODUCT_ID);
+
+        // then
+        verify(productRepositoryMock).findById(PRODUCT_ID);
+        verify(cartRepositoryMock).findCartsByProductId(PRODUCT_ID);
+        verify(cartServiceMock).deleteProductFromCart(cart.getCartId(), PRODUCT_ID);
+        verify(productRepositoryMock).delete(TEST_PRODUCT);
+        verify(modelMapperMock).map(TEST_PRODUCT, ProductDTO.class);
+        verifyNoMoreInteractions(productRepositoryMock, cartRepositoryMock, cartServiceMock, modelMapperMock);
     }
 }
