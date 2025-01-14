@@ -33,7 +33,7 @@ public class CartController {
     }
 
     @GetMapping("/carts/users/cart")
-    private ResponseEntity<CartDTO> getCartById() {
+    public ResponseEntity<CartDTO> getCartById() {
         String email = authenticationUtil.loggedInEmail();
         Cart cart = cartRepository.findCartByEmail(email);
         CartDTO cartDTO = cartService.getCart(email, cart.getCartId());
