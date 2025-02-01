@@ -32,11 +32,11 @@ public class OrderServiceImpl implements OrderService {
     public OrderDTO placeOrder(String email, Long addressId, String paymentMethod, String pgName, String pgPaymentId, String pgStatus, String pgResponseMessage) {
         Cart cart = cartRepository.findCartByEmail(email);
         if (cart == null) {
-            throw new ResourceNotFoundException(email, "email", "Cart");
+            throw new ResourceNotFoundException("Cart", "email", email);
         }
 
         Address address = addressRepository.findById(addressId)
-                .orElseThrow(() -> new ResourceNotFoundException(addressId, "addressId", "Address"));
+                .orElseThrow(() -> new ResourceNotFoundException("Address", "addressId", addressId));
 
         Order order = new Order();
         order.setEmail(email);

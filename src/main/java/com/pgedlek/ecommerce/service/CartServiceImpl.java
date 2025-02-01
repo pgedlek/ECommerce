@@ -32,7 +32,7 @@ public class CartServiceImpl implements CartService {
         Cart cart = createCart();
 
         Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new ResourceNotFoundException(productId, "productId", "Product"));
+                .orElseThrow(() -> new ResourceNotFoundException("Product", "productId", productId));
 
         CartItem cartItem = cartItemRepository.findCartItemByProductIdAndCartId(productId, cart.getCartId());
 
@@ -107,7 +107,7 @@ public class CartServiceImpl implements CartService {
         Cart cart = cartRepository.findCartByEmailAndCartId(email, cartId);
 
         if (cart == null) {
-            throw new ResourceNotFoundException(cartId, "cartId", "Cart");
+            throw new ResourceNotFoundException("Cart", "cartId", cartId);
         }
 
         CartDTO cartDTO = modelMapper.map(cart, CartDTO.class);
@@ -126,10 +126,10 @@ public class CartServiceImpl implements CartService {
         Cart userCart = cartRepository.findCartByEmail(email);
 
         Cart cart = cartRepository.findById(userCart.getCartId())
-                .orElseThrow(() -> new ResourceNotFoundException(userCart.getCartId(), "cartId", "Cart"));
+                .orElseThrow(() -> new ResourceNotFoundException("Cart", "cartId", userCart.getCartId()));
 
         Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new ResourceNotFoundException(productId, "productId", "Product"));
+                .orElseThrow(() -> new ResourceNotFoundException("Product", "productId", productId));
 
         if (product.getQuantity() == 0) {
             throw new ApiException("Product " + product.getProductName() + " is out of stock!");
@@ -183,12 +183,12 @@ public class CartServiceImpl implements CartService {
     @Transactional
     public String deleteProductFromCart(Long cartId, Long productId) {
         Cart cart = cartRepository.findById(cartId)
-                .orElseThrow(() -> new ResourceNotFoundException(cartId, "cartId", "Cart"));
+                .orElseThrow(() -> new ResourceNotFoundException("Cart", "cartId", cartId));
 
         CartItem cartItem = cartItemRepository.findCartItemByProductIdAndCartId(productId, cart.getCartId());
 
         if (cartItem == null) {
-            throw new ResourceNotFoundException(productId, "productId", "Product");
+            throw new ResourceNotFoundException("Product", "productId", productId);
         }
 
         cart.setTotalPrice(cart.getTotalPrice() - (cartItem.getProductPrice() * cartItem.getQuantity()));
@@ -204,10 +204,10 @@ public class CartServiceImpl implements CartService {
     @Override
     public void updateProductInCarts(Long cartId, Long productId) {
         Cart cart = cartRepository.findById(cartId)
-                .orElseThrow(() -> new ResourceNotFoundException(cartId, "cartId", "Cart"));
+                .orElseThrow(() -> new ResourceNotFoundException("Cart", "cartId", cartId));
 
         Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new ResourceNotFoundException(productId, "productId", "Product"));
+                .orElseThrow(() -> new ResourceNotFoundException("Product", "productId", productId));
 
         CartItem cartItem = cartItemRepository.findCartItemByProductIdAndCartId(productId, cart.getCartId());
 

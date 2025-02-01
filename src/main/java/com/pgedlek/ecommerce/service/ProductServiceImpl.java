@@ -40,7 +40,7 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public ProductDTO addProduct(Long categoryId, ProductDTO productDTO) {
         Category productCategory = categoryRepository.findById(categoryId)
-                .orElseThrow(() -> new ResourceNotFoundException(categoryId, "categoryId", "Category"));
+                .orElseThrow(() -> new ResourceNotFoundException("Category", "categoryId", categoryId));
 
         boolean isProductPresent = productCategory.getProducts().stream()
                 .anyMatch(p -> p.getProductName().equals(productDTO.getProductName()));
@@ -83,7 +83,7 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public ProductResponse searchByCategory(Long categoryId, Integer pageNumber, Integer pageSize, String sortBy, String sortOrder) {
         Category productCategory = categoryRepository.findById(categoryId)
-                .orElseThrow(() -> new ResourceNotFoundException(categoryId, "categoryId", "Category"));
+                .orElseThrow(() -> new ResourceNotFoundException("Category", "categoryId", categoryId));
 
         Sort sortByAndOrder = sortOrder.equalsIgnoreCase("asc")
                 ? Sort.by(sortBy).ascending()
@@ -130,7 +130,7 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public ProductDTO updateProduct(Long productId, ProductDTO productDTO) {
         Product productFromDb = productRepository.findById(productId)
-                .orElseThrow(() -> new ResourceNotFoundException(productId, "productId", "Product"));
+                .orElseThrow(() -> new ResourceNotFoundException("Product", "productId", productId));
 
         Product product = modelMapper.map(productDTO, Product.class);
         productFromDb.setProductName(product.getProductName());
@@ -160,7 +160,7 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public ProductDTO deleteProduct(Long productId) {
         Product productFromDb = productRepository.findById(productId)
-                .orElseThrow(() -> new ResourceNotFoundException(productId, "productId", "Product"));
+                .orElseThrow(() -> new ResourceNotFoundException("Product", "productId", productId));
 
         List<Cart> carts = cartRepository.findCartsByProductId(productId);
         carts.forEach(cart -> cartService.deleteProductFromCart(cart.getCartId(), productId));
@@ -172,7 +172,7 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public ProductDTO updateProductImage(Long productId, MultipartFile image) throws IOException {
         Product productFromDb = productRepository.findById(productId)
-                .orElseThrow(() -> new ResourceNotFoundException(productId, "productId", "Product"));
+                .orElseThrow(() -> new ResourceNotFoundException("Product", "productId", productId));
 
         String filename = fileService.uploadImage(path, image);
         productFromDb.setImage(filename);
