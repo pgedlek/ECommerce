@@ -68,7 +68,7 @@ class ProductServiceImplTest {
         when(modelMapperMock.map(TEST_PRODUCT, ProductDTO.class)).thenReturn(TEST_PRODUCT_DTO);
 
         // when
-        ProductResponse allProducts = productService.getAllProducts(TEST_PAGE_NUMBER, TEST_PAGE_SIZE, TEST_SORT_BY, TEST_SORT_ORDER);
+        ProductResponse allProducts = productService.getAllProducts(TEST_PAGE_NUMBER, TEST_PAGE_SIZE, TEST_SORT_BY, TEST_SORT_ORDER, "keyword", "category");
 
         // then
         assertThat(allProducts.getContent()).hasSameElementsAs(List.of(TEST_PRODUCT_DTO));
@@ -83,7 +83,7 @@ class ProductServiceImplTest {
         when(productRepositoryMock.findAll(PageRequest.of(TEST_PAGE_NUMBER, TEST_PAGE_SIZE, Sort.by(TEST_SORT_BY).ascending()))).thenReturn(Page.empty());
 
         // when
-        Throwable caughtException = catchThrowable(() -> productService.getAllProducts(TEST_PAGE_NUMBER, TEST_PAGE_SIZE, TEST_SORT_BY, TEST_SORT_ORDER));
+        Throwable caughtException = catchThrowable(() -> productService.getAllProducts(TEST_PAGE_NUMBER, TEST_PAGE_SIZE, TEST_SORT_BY, TEST_SORT_ORDER, "keyword", "category"));
 
         // then
         assertThat(caughtException)

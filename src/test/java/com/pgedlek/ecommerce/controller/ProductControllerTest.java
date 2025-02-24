@@ -48,15 +48,15 @@ class ProductControllerTest {
     void testGetAllProducts_Success() {
         // given
         ProductResponse productResponse = new ProductResponse(List.of(), 1, 10, 1L, 1, true);
-        when(productServiceMock.getAllProducts(0, 10, "name", "asc")).thenReturn(productResponse);
+        when(productServiceMock.getAllProducts(0, 10, "name", "asc", "keyword", "category")).thenReturn(productResponse);
 
         // when
-        ResponseEntity<ProductResponse> response = productController.getAllProducts(0, 10, "name", "asc");
+        ResponseEntity<ProductResponse> response = productController.getAllProducts("keyword", "category", 0, 10, "name", "asc");
 
         // then
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertThat(response.getBody()).isEqualTo(productResponse);
-        verify(productServiceMock).getAllProducts(0, 10, "name", "asc");
+        verify(productServiceMock).getAllProducts(0, 10, "name", "asc", "keyword", "category");
     }
 
     @Test
