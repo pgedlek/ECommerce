@@ -12,6 +12,7 @@ import com.pgedlek.ecommerce.repository.CartRepository;
 import com.pgedlek.ecommerce.repository.CategoryRepository;
 import com.pgedlek.ecommerce.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
@@ -38,6 +39,7 @@ public class ProductServiceImpl implements ProductService {
     @Value("${project.image}")
     private String path;
 
+    @Setter
     @Value("${image.base.url}")
     private String imageBaseUrl;
 

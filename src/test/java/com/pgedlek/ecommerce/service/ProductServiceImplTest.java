@@ -10,6 +10,8 @@ import com.pgedlek.ecommerce.payload.ProductResponse;
 import com.pgedlek.ecommerce.repository.CartRepository;
 import com.pgedlek.ecommerce.repository.CategoryRepository;
 import com.pgedlek.ecommerce.repository.ProductRepository;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -20,6 +22,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.test.context.event.annotation.BeforeTestMethod;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -59,37 +63,46 @@ class ProductServiceImplTest {
     @InjectMocks
     private ProductServiceImpl productService;
 
+    @BeforeEach
+    public void setUp() {
+        productService.setImageBaseUrl("http://abc.com/images");
+    }
+
     @Test
     public void testGetAllProducts_Success() {
         // given
         List<Product> productList = List.of(TEST_PRODUCT);
-        when(productRepositoryMock.findAll(PageRequest.of(TEST_PAGE_NUMBER, TEST_PAGE_SIZE, Sort.by(TEST_SORT_BY).ascending())))
+        when(productRepositoryMock.findAll(any(Specification.class),
+                eq(PageRequest.of(TEST_PAGE_NUMBER, TEST_PAGE_SIZE, Sort.by(TEST_SORT_BY).ascending()))))
                 .thenReturn(new PageImpl<>(productList));
         when(modelMapperMock.map(TEST_PRODUCT, ProductDTO.class)).thenReturn(TEST_PRODUCT_DTO);
+
 
         // when
         ProductResponse allProducts = productService.getAllProducts(TEST_PAGE_NUMBER, TEST_PAGE_SIZE, TEST_SORT_BY, TEST_SORT_ORDER, "keyword", "category");
 
         // then
         assertThat(allProducts.getContent()).hasSameElementsAs(List.of(TEST_PRODUCT_DTO));
-        verify(productRepositoryMock).findAll(PageRequest.of(TEST_PAGE_NUMBER, TEST_PAGE_SIZE, Sort.by(TEST_SORT_BY).ascending()));
+        verify(productRepositoryMock).findAll(any(Specification.class),
+                eq(PageRequest.of(TEST_PAGE_NUMBER, TEST_PAGE_SIZE, Sort.by(TEST_SORT_BY).ascending())));
         verify(modelMapperMock).map(TEST_PRODUCT, ProductDTO.class);
         verifyNoMoreInteractions(categoryRepositoryMock, productRepositoryMock, modelMapperMock);
     }
 
     @Test
-    void testGetAllProducts_NoProductsExist() throws ApiException {
+    void testGetAllProducts_returnEmptyListWhenNoProductFound() throws ApiException {
         // given
-        when(productRepositoryMock.findAll(PageRequest.of(TEST_PAGE_NUMBER, TEST_PAGE_SIZE, Sort.by(TEST_SORT_BY).ascending()))).thenReturn(Page.empty());
+        when(productRepositoryMock.findAll(any(Specification.class),
+                eq(PageRequest.of(TEST_PAGE_NUMBER, TEST_PAGE_SIZE, Sort.by(TEST_SORT_BY).ascending()))))
+                .thenReturn(Page.empty());
 
         // when
-        Throwable caughtException = catchThrowable(() -> productService.getAllProducts(TEST_PAGE_NUMBER, TEST_PAGE_SIZE, TEST_SORT_BY, TEST_SORT_ORDER, "keyword", "category"));
+        ProductResponse productResponse = productService.getAllProducts(TEST_PAGE_NUMBER, TEST_PAGE_SIZE, TEST_SORT_BY, TEST_SORT_ORDER, null, null);
 
         // then
-        assertThat(caughtException)
-                .isExactlyInstanceOf(ApiException.class)
-                .hasMessage("No products created till now.");
-        verify(productRepositoryMock).findAll(PageRequest.of(TEST_PAGE_NUMBER, TEST_PAGE_SIZE, Sort.by(TEST_SORT_BY).ascending()));
+        assertThat(productResponse.getContent()).isEmpty();
+        verify(productRepositoryMock).findAll(any(Specification.class),
+                eq(PageRequest.of(TEST_PAGE_NUMBER, TEST_PAGE_SIZE, Sort.by(TEST_SORT_BY).ascending())));
         verifyNoMoreInteractions(categoryRepositoryMock, productRepositoryMock, modelMapperMock);
     }
 
