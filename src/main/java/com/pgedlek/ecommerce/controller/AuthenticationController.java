@@ -1,18 +1,18 @@
 package com.pgedlek.ecommerce.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.pgedlek.ecommerce.exception.ResourceNotFoundException;
 import com.pgedlek.ecommerce.model.AppRole;
 import com.pgedlek.ecommerce.model.Role;
 import com.pgedlek.ecommerce.model.User;
-import com.pgedlek.ecommerce.payload.LoginRequest;
-import com.pgedlek.ecommerce.payload.MessageResponse;
-import com.pgedlek.ecommerce.payload.SignupRequest;
-import com.pgedlek.ecommerce.payload.UserInfoResponse;
+import com.pgedlek.ecommerce.payload.*;
 import com.pgedlek.ecommerce.repository.RoleRepository;
 import com.pgedlek.ecommerce.repository.UserRepository;
 import com.pgedlek.ecommerce.security.jwt.JwtUtils;
 import com.pgedlek.ecommerce.security.service.UserDetailsImpl;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.modelmapper.ModelMapper;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
@@ -38,6 +38,7 @@ public class AuthenticationController {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final ModelMapper modelMapper;
 
     @PostMapping("/signin")
     public ResponseEntity<?> authenticateUser(@RequestBody LoginRequest loginRequest) {
@@ -134,6 +135,22 @@ public class AuthenticationController {
                 .collect(Collectors.toList());
 
         UserInfoResponse response = new UserInfoResponse(userDetails.getId(), userDetails.getUsername(), roles);
+
+        return ResponseEntity.ok().body(response);
+    }
+
+    @GetMapping("/userdetails")
+    public ResponseEntity<UserDetailsResponse> currentUserWithAddress(Authentication authentication) {
+        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+
+        User user = userRepository.findByUsername(userDetails.getUsername())
+                .orElseThrow(() -> new ResourceNotFoundException("User", "username", userDetails.getUsername()));
+
+        List<AddressDTO> addressDTOS = user.getAddresses().stream()
+                .map(address -> modelMapper.map(address, AddressDTO.class))
+                .toList();
+
+        UserDetailsResponse response = new UserDetailsResponse(user.getUsername(), user.getEmail(), addressDTOS);
 
         return ResponseEntity.ok().body(response);
     }
