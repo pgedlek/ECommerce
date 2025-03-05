@@ -1,6 +1,8 @@
 package com.pgedlek.ecommerce.exception;
 
 import com.pgedlek.ecommerce.payload.ApiResponse;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -38,6 +40,16 @@ public class MyGlobalExceptionHandler {
     @ExceptionHandler(ApiException.class)
     public ResponseEntity<ApiResponse> myApiException(ApiException e) {
         String message = e.getMessage();
+        return new ResponseEntity<>(new ApiResponse(message, false), BAD_REQUEST);
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ApiResponse> constraintViolationException(ConstraintViolationException e) {
+        String message = e.getConstraintViolations().stream()
+                .map(ConstraintViolation::getMessage)
+                .findFirst()
+                .orElse(e.getMessage());
+
         return new ResponseEntity<>(new ApiResponse(message, false), BAD_REQUEST);
     }
 }
