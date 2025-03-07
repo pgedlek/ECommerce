@@ -1,6 +1,5 @@
 package com.pgedlek.ecommerce.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pgedlek.ecommerce.exception.ResourceNotFoundException;
 import com.pgedlek.ecommerce.model.AppRole;
 import com.pgedlek.ecommerce.model.Role;
@@ -12,6 +11,7 @@ import com.pgedlek.ecommerce.security.jwt.JwtUtils;
 import com.pgedlek.ecommerce.security.service.UserDetailsImpl;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -29,6 +29,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
@@ -127,7 +128,11 @@ public class AuthenticationController {
     }
 
     @GetMapping("/user")
-    public ResponseEntity<UserInfoResponse> currentUserDetails(Authentication authentication) {
+    public ResponseEntity<?> currentUserDetails(Authentication authentication) {
+        if (authentication == null) {
+            log.error("Empty authentication provided");
+            return new ResponseEntity<>("Wrong authentication provided.", HttpStatus.UNAUTHORIZED);
+        }
         UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
 
         List<String> roles = userDetails.getAuthorities().stream()
@@ -140,7 +145,11 @@ public class AuthenticationController {
     }
 
     @GetMapping("/userdetails")
-    public ResponseEntity<UserDetailsResponse> currentUserWithAddress(Authentication authentication) {
+    public ResponseEntity<?> currentUserWithAddress(Authentication authentication) {
+        if (authentication == null) {
+            log.error("Empty authentication provided");
+            return new ResponseEntity<>("Wrong authentication provided.", HttpStatus.UNAUTHORIZED);
+        }
         UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
 
         User user = userRepository.findByUsername(userDetails.getUsername())
